@@ -1,0 +1,52 @@
+# Virtual Environment
+venv/
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VS Code
+.vscode/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Outputs
+outputs/charts/*
+outputs/reports/*
+
+# Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+
+# SQLite Temporary Files
+*.db-journal
+*.sqlite-journal
+
+# Build Files
+build/
+dist/
+*.egg-info/
+
+# Environment files
+.env
+.env.*
+
+# Keep Database (Optional)
+# If you want northwind.db in GitHub, comment next line
+# database/*.db
+
+# If you DON'T want database in GitHub
+# database/*.db

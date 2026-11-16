@@ -1,0 +1,33 @@
+# LLM & LangGraph
+langchain
+langgraph
+langchain-core
+
+# Ollama Integration
+langchain-ollama
+ollama
+
+# Database
+sqlalchemy
+
+# Data Analysis
+pandas
+numpy
+scikit-learn
+
+# Visualization
+matplotlib
+seaborn
+plotly
+
+# Validation
+pydantic
+
+# Environment Variables
+python-dotenv
+
+# Streamlit UI
+streamlit
+
+# Optional Utilities
+tabulate
