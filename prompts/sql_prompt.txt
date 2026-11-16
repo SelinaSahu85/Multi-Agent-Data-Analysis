@@ -1,0 +1,31 @@
+Generate ONLY standard SQLite SELECT statements.
+
+DO NOT use:
+
+JSON_AGG
+JSON_OBJECT
+JSON_OBJECT_AGG
+JSON_BUILD_OBJECT
+ARRAY_AGG
+
+The query must return rows and columns only.
+
+Valid Example:
+
+SELECT
+    c.CategoryName,
+    SUM(
+        od.UnitPrice *
+        od.Quantity *
+        (1 - od.Discount)
+    ) AS TotalSales
+FROM order_details od
+JOIN products p
+    ON od.ProductID = p.ProductID
+JOIN categories c
+    ON p.CategoryID = c.CategoryID
+JOIN orders o
+    ON od.OrderID = o.OrderID
+WHERE strftime('%Y', o.OrderDate) = '1997'
+GROUP BY c.CategoryName
+ORDER BY TotalSales DESC;

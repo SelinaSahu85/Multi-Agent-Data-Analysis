@@ -1,5 +1,3 @@
-# tools/schema_tool.py
-
 import sqlite3
 from pprint import pprint
 
@@ -61,38 +59,17 @@ def get_table_columns(table_name):
 
 def get_schema():
     """
-    Returns entire schema as dictionary
-
-    Example:
-
-    {
-        "customers": [
-            "CustomerID",
-            "CompanyName"
-        ],
-        "orders": [
-            "OrderID",
-            "OrderDate"
-        ]
-    }
+    Returns complete schema as dictionary
     """
 
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT name
-        FROM sqlite_master
-        WHERE type='table';
-    """)
-
-    tables = cursor.fetchall()
+    tables = get_tables()
 
     schema = {}
 
-    for table in tables:
-
-        table_name = table[0]
+    for table_name in tables:
 
         cursor.execute(
             f"PRAGMA table_info({table_name})"
@@ -112,7 +89,7 @@ def get_schema():
 
 def get_schema_text():
     """
-    Convert schema into LLM-friendly text
+    Returns entire schema as LLM-friendly text
     """
 
     schema = get_schema()
@@ -131,14 +108,7 @@ def get_schema_text():
 
 def get_required_schema(required_tables):
     """
-    Return schema only for tables needed
-    by the current query.
-
-    Example:
-    required_tables = [
-        "orders",
-        "order_details"
-    ]
+    Returns schema only for required tables
     """
 
     schema = get_schema()
@@ -158,21 +128,101 @@ def get_required_schema(required_tables):
     return schema_text.strip()
 
 
+def get_relationships():
+    """
+    Known Northwind relationships.
+
+    Helps SQL Agent generate
+    proper JOIN statements.
+    """
+
+    return """
+Northwind Relationships:
+
+customers.CustomerID = orders.CustomerID
+
+employees.EmployeeID = orders.EmployeeID
+
+orders.OrderID = order_details.OrderID
+
+products.ProductID = order_details.ProductID
+
+products.CategoryID = categories.CategoryID
+
+products.SupplierID = suppliers.SupplierID
+
+employee_territory.EmployeeID = employees.EmployeeID
+
+employee_territory.TerritoryID = territories.TerritoryID
+
+territories.RegionID = region.RegionID
+
+orders.ShipVia = shippers.ShipperID
+
+Important Notes:
+
+OrderDate exists only in orders table.
+
+Sales Revenue can be calculated using:
+
+UnitPrice * Quantity * (1 - Discount)
+
+Date filters should use:
+
+orders.OrderDate
+"""
+
+
+def get_sql_context(required_tables):
+    """
+    Complete context passed to SQL Agent.
+
+    Includes:
+    1. Relevant schema
+    2. Relationship information
+    """
+
+    schema_text = get_required_schema(
+        required_tables
+    )
+
+    relationships = get_relationships()
+
+    return f"""
+DATABASE SCHEMA
+
+{schema_text}
+
+--------------------------------------------------
+
+RELATIONSHIPS
+
+{relationships}
+"""
+
+
 def print_schema():
-    """
-    Pretty print schema
-    """
 
     pprint(get_schema())
 
 
 if __name__ == "__main__":
 
-    print("\nALL TABLES\n")
+    print("\nTABLES\n")
     print(get_tables())
 
     print("\nFULL SCHEMA\n")
     print_schema()
 
-    print("\nSCHEMA TEXT\n")
+    print("\nCOMPLETE SCHEMA TEXT\n")
     print(get_schema_text())
+
+    print("\nSQL CONTEXT\n")
+    print(
+        get_sql_context([
+            "products",
+            "categories",
+            "orders",
+            "order_details"
+        ])
+    )

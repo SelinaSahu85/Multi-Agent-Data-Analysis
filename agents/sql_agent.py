@@ -1,15 +1,12 @@
 import json
 from pathlib import Path
 
-from tools.llm import get_json_llm
-from tools.schema_tool import get_required_schema
+from tools.llm import get_llm
+from tools.schema_tool import get_sql_context
 from tools.sql_validator import validate_sql
 from tools.database_tool import execute_query
 
-from models.sql_model import SQLOutput
-
-
-llm = get_json_llm()
+llm = get_llm()
 
 
 def sql_agent(state):
@@ -19,7 +16,7 @@ def sql_agent(state):
 
     required_tables = plan["required_tables"]
 
-    schema_context = get_required_schema(
+    schema_context = get_sql_context(
         required_tables
     )
 
@@ -34,6 +31,10 @@ def sql_agent(state):
     validation_error = ""
 
     for attempt in range(max_retries):
+
+        print("\n" + "=" * 80)
+        print(f"SQL GENERATION ATTEMPT {attempt + 1}")
+        print("=" * 80)
 
         prompt = f"""
 {prompt_template}
@@ -54,31 +55,26 @@ EXECUTION PLAN:
 
 {json.dumps(plan, indent=2)}
 
-Previous Validation Error:
+PREVIOUS VALIDATION ERROR:
 
 {validation_error}
 """
 
         response = llm.invoke(prompt)
 
-        try:
+        sql_query = response.content.strip()
 
-            data = json.loads(
-                response.content
-            )
+        # Remove markdown fences if model returns them
+        sql_query = sql_query.replace(
+            "```sql", ""
+        ).replace(
+            "```", ""
+        ).strip()
 
-            sql_output = SQLOutput(
-                **data
-            )
-
-        except Exception:
-
-            print("\nInvalid JSON Returned:\n")
-            print(response.content)
-
-            continue
-
-        sql_query = sql_output.sql_query
+        print("\n" + "=" * 80)
+        print("GENERATED SQL")
+        print("=" * 80)
+        print(sql_query)
 
         is_valid, error = validate_sql(
             sql_query
@@ -86,7 +82,7 @@ Previous Validation Error:
 
         if is_valid:
 
-            print("\nSQL Validation Passed\n")
+            print("\n✅ SQL VALIDATION PASSED")
 
             try:
 
@@ -94,22 +90,26 @@ Previous Validation Error:
                     sql_query
                 )
 
+                print("\n✅ QUERY EXECUTED SUCCESSFULLY")
+
+                print("\nRESULT SHAPE:")
+                print(result_df.shape)
+
+                print("\nFIRST 5 ROWS:")
+                print(result_df.head())
+
                 state["sql_query"] = (
                     sql_query
                 )
 
-                state["sql_explanation"] = (
-                    sql_output.explanation
+                state["sql_validation"] = (
+                    "Passed"
                 )
 
                 state["query_results"] = (
                     result_df.to_dict(
                         orient="records"
                     )
-                )
-
-                state["sql_validation"] = (
-                    "Passed"
                 )
 
                 return state
@@ -120,17 +120,30 @@ Previous Validation Error:
                     f"Execution Error: {db_error}"
                 )
 
-                print(
-                    f"\nExecution Failed: {db_error}"
-                )
+                print("\n❌ QUERY EXECUTION FAILED")
+                print(db_error)
 
         else:
 
-            validation_error = error
+            print("\n❌ SQL VALIDATION FAILED")
+            print(error)
 
-            print(
-                f"\nValidation Failed: {error}"
-            )
+            validation_error = f"""
+The previous SQL query failed validation.
+
+Validation Error:
+{error}
+
+Generate a corrected SQLite query.
+
+Important:
+- Use only SQLite syntax.
+- Do not use JSON_AGG.
+- Do not use JSON_OBJECT.
+- Do not use JSON_BUILD_OBJECT.
+- OrderDate exists only in the orders table.
+- Return only SQL.
+"""
 
     raise ValueError(
         f"Failed to generate valid SQL after {max_retries} attempts."
