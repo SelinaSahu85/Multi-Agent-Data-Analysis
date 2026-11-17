@@ -129,15 +129,9 @@ def get_required_schema(required_tables):
 
 
 def get_relationships():
-    """
-    Known Northwind relationships.
-
-    Helps SQL Agent generate
-    proper JOIN statements.
-    """
 
     return """
-Northwind Relationships:
+NORTHWIND RELATIONSHIPS
 
 customers.CustomerID = orders.CustomerID
 
@@ -159,19 +153,38 @@ territories.RegionID = region.RegionID
 
 orders.ShipVia = shippers.ShipperID
 
-Important Notes:
 
-OrderDate exists only in orders table.
+BUSINESS RULES
 
-Sales Revenue can be calculated using:
+Revenue Formula:
 
-UnitPrice * Quantity * (1 - Discount)
+order_details.UnitPrice
+*
+order_details.Quantity
+*
+(1 - order_details.Discount)
 
-Date filters should use:
+Column Rules
 
+Quantity exists ONLY in:
+order_details.Quantity
+
+Discount exists ONLY in:
+order_details.Discount
+
+OrderDate exists ONLY in:
 orders.OrderDate
-"""
 
+Sales calculations should always use:
+order_details.UnitPrice
+order_details.Quantity
+order_details.Discount
+
+Never use:
+orders.Quantity
+orders.Discount
+products.Discount
+"""
 
 def get_sql_context(required_tables):
     """

@@ -9,6 +9,7 @@ ollama
 
 # Database
 sqlalchemy
+sqlglot
 
 # Data Analysis
 pandas
